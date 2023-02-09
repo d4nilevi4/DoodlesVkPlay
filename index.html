@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <title>Unity WebGL Player | Doodles while break</title>
+  <link rel="shortcut icon" href="TemplateData/favicon.ico">
+  <link rel="stylesheet" href="TemplateData/style.css">
+  <script type="text/javascript" src="//vkplay.ru/app/20258/static/mailru.core.js"></script>
+  <script type="text/javascript">
+      (function apiHandshake(iframeApi) {
+        if (typeof iframeApi === 'undefined') {
+          console.log('Cannot find iframeApi function, are we inside an iframe?');
+          return;
+        }
+
+        var config = {
+          interstitial: true,
+        }
+
+        var rewardedConfig = {
+          interstitial: false,
+        }
+
+        var externalApi = null;
+
+        var callbacks = {
+          appid: 20258,
+
+          getLoginStatusCallback: function(status) {
+            window.getLoginStatusCallback(status)
+          },
+          userInfoCallback: function(info) {
+            window.userInfoCallback(info)
+          },
+          userProfileCallback: function(profile) {},
+          registerUserCallback: function(info) {
+            window.reloadWindow()
+          },
+          paymentFrameUrlCallback: function(url) {},
+          getAuthTokenCallback: function(token) {},
+          paymentReceivedCallback: function(data) {},
+          paymentWindowClosedCallback: function() {},
+          userConfirmCallback: function() {},
+          adsCallback: function(context) {
+            window.adsCallback(context)
+          },
+        };
+
+        function error(err) {
+          throw new Error('Could not init external api ' + err);
+        }
+
+        function connected(api) {
+          console.log('connected!')
+          externalApi = api;
+        }
+
+        iframeApi(callbacks).then(connected, error);
+
+        window.showRewardedAds = function() {
+          console.log('showAds invoked')
+          externalApi?.showAds(rewardedConfig);
+        };
+
+        window.showAds = function() {
+          console.log('showAds invoked')
+          externalApi?.showAds(config);
+        };
+
+        window.getLoginStatus = function() {
+          console.log('getLoginStatus invoked');
+          externalApi?.getLoginStatus();
+        };
+
+        window.authUser = function() {
+          console.log('authUser invoked');
+          externalApi?.authUser();
+        };
+
+        window.registerUser = function() {
+          console.log('registerUser invoked');
+          externalApi?.registerUser();
+        }
+
+        window.userInfo = function() {
+          console.log('userInfo invoked')
+          externalApi?.userInfo();
+        }
+
+        window.reloadWindow = function() {
+          console.log('reloadWindow invoked')
+          externalApi?.reloadWindow()
+        }
+      }(window.iframeApi));
+    </script>
+</head>
+<body>
+  <div id="unity-container" style="position: absolute; width: 100%; height: 100%; left: 0%; top: 0%;">
+    <canvas id="unity-canvas" style="position: absolute; width: 100%; height: 100%"></canvas>
+    <div id="unity-loading-bar">
+      <div id="unity-logo"></div>
+      <div id="unity-progress-bar-empty">
+        <div id="unity-progress-bar-full"></div>
+      </div>
+    </div>
+    <div id="unity-warning"> </div>
+  </div>
+  <script>
+    var container = document.querySelector("#unity-container");
+    var canvas = document.querySelector("#unity-canvas");
+    var loadingBar = document.querySelector("#unity-loading-bar");
+    var progressBarFull = document.querySelector("#unity-progress-bar-full");
+      //var fullscreenButton = document.querySelector("#unity-fullscreen-button");
+      var warningBanner = document.querySelector("#unity-warning");
+
+      // Shows a temporary message banner/ribbon for a few seconds, or
+      // a permanent error message on top of the canvas if type=='error'.
+      // If type=='warning', a yellow highlight color is used.
+      // Modify or remove this function to customize the visually presented
+      // way that non-critical warnings and error messages are presented to the
+      // user.
+      function unityShowBanner(msg, type) {
+        function updateBannerVisibility() {
+          warningBanner.style.display = warningBanner.children.length ? 'block' : 'none';
+        }
+        var div = document.createElement('div');
+        div.innerHTML = msg;
+        warningBanner.appendChild(div);
+        if (type == 'error') div.style = 'background: red; padding: 10px;';
+        else {
+          if (type == 'warning') div.style = 'background: yellow; padding: 10px;';
+          setTimeout(function() {
+            warningBanner.removeChild(div);
+            updateBannerVisibility();
+          }, 5000);
+        }
+        updateBannerVisibility();
+      }
+
+      var buildUrl = "Build";
+      var loaderUrl = buildUrl + "/DoodlesVkPlay.loader.js";
+      var config = {
+        dataUrl: buildUrl + "/DoodlesVkPlay.data",
+        frameworkUrl: buildUrl + "/DoodlesVkPlay.framework.js",
+        codeUrl: buildUrl + "/DoodlesVkPlay.wasm",
+        streamingAssetsUrl: "StreamingAssets",
+        companyName: "D4a",
+        productName: "Doodles while break",
+        productVersion: "1.0",
+        showBanner: unityShowBanner,
+      };
+
+      // By default Unity keeps WebGL canvas render target size matched with
+      // the DOM size of the canvas element (scaled by window.devicePixelRatio)
+      // Set this to false if you want to decouple this synchronization from
+      // happening inside the engine, and you would instead like to size up
+      // the canvas DOM size and WebGL render target sizes yourself.
+      // config.matchWebGLToCanvasSize = false;
+
+      if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+        container.className = "unity-mobile";
+        // Avoid draining fillrate performance on mobile devices,
+        // and default/override low DPI mode on mobile browsers.
+        canvas.style.width = "100%";
+        canvas.style.height = "100%";
+      } else {
+        canvas.style.width = "100%";
+        canvas.style.height = "100%";
+      }
+      loadingBar.style.display = "block";
+
+      var script = document.createElement("script");
+      script.src = loaderUrl;
+      script.onload = () => {
+        createUnityInstance(canvas, config, (progress) => {
+          progressBarFull.style.width = 100 * progress + "%";
+        }).then((unityInstance) => {
+          window.unityInstance = unityInstance;
+          loadingBar.style.display = "none";
+
+          window.adsCallback = function(context) {
+            t = context.type
+            if (t === undefined)
+              t = 'adError'
+            console.log(t)
+            c = context.code
+            if (c === undefined)
+              c = 'adInternalError'
+            console.log(c)
+
+            if (t === 'adCompleted')
+              unityInstance.SendMessage('VKSDK', 'OnRewardGet')
+
+            //unityInstance.SendMessage('VKSDK', 'AdsCallback', t, c)
+          }
+
+          /*window.getLoginStatusCallback = function(status) {
+            console.log('getLoginStatusCallback invoked with status: ' + JSON.stringify(status));
+            if (status.status === 'ok')
+              unityInstance.SendMessage('GAME_MANAGER', 'GetLoginStatusCallback_Ok', status.loginStatus)
+            else if (status.status === 'error')
+              unityInstance.SendMessage('GAME_MANAGER', 'GetLoginStatusCallback_Error', status.errcode, status.errmsg)
+            else
+              console.log('Undefined status.status: ' + status.status)
+          }
+
+          window.userInfoCallback = function(status) {
+            console.log('userInfoCallback invoked with status: ' + JSON.stringify(status));
+            if (status.status === 'ok')
+              unityInstance.SendMessage('GAME_MANAGER', 'UserInfoCallback_Ok', parseInt(status.uid))
+            else if (status.status === 'error')
+              unityInstance.SendMessage('GAME_MANAGER', 'UserInfoCallback_Error', status.errcode, status.errmsg)
+            else
+              console.log('Undefined status.status: ' + status.status)
+          }*/
+        }).catch((message) => {
+          alert(message);
+        });
+      };
+      document.body.appendChild(script);
+    </script>
+</body>
+</html>
